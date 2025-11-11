@@ -71,20 +71,49 @@ const UploadPage: React.FC = () => {
     setUploadStatus({ isUploading: false, progress: 0, isComplete: false });
   };
 
-  const mockWebhookCall = async () => {
+  const uploadFiles = async () => {
     setUploadStatus({ isUploading: true, progress: 0, isComplete: false });
     
-    for (let i = 0; i <= 100; i += 10) {
-      await new Promise(resolve => setTimeout(resolve, 200));
-      setUploadStatus(prev => ({ ...prev, progress: i }));
+    try {
+      const formData = new FormData();
+      uploadedFiles.forEach((file, index) => {
+        formData.append(`file_${index}`, file);
+      });
+
+      const totalDuration = 60000;
+      const updateInterval = 100;
+      const progressIncrement = 100 / (totalDuration / updateInterval);
+      let currentProgress = 0;
+
+      const progressInterval = setInterval(() => {
+        currentProgress += progressIncrement;
+        if (currentProgress >= 100) {
+          clearInterval(progressInterval);
+          currentProgress = 100;
+        }
+        setUploadStatus(prev => ({ ...prev, progress: Math.round(currentProgress) }));
+      }, updateInterval);
+
+      const response = await fetch('https://g.allyx.tech/webhook-test/80dea11b-7576-4332-b40c-08d8cb33c216', {
+        method: 'GET',
+      });
+
+      await new Promise(resolve => setTimeout(resolve, totalDuration));
+
+      if (response.ok) {
+        setUploadStatus({ isUploading: false, progress: 100, isComplete: true });
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      setUploadStatus({ isUploading: false, progress: 0, isComplete: false });
     }
-    
-    setUploadStatus({ isUploading: false, progress: 100, isComplete: true });
   };
 
   const handleUploadSubmit = () => {
     if (uploadedFiles.length > 0) {
-      mockWebhookCall();
+      uploadFiles();
     }
   };
 
@@ -172,7 +201,7 @@ const UploadPage: React.FC = () => {
               <div className="upload-complete">
                 <div className="complete-icon">✓</div>
                 <div className="complete-text">Finish</div>
-                <div className="excel-file-link" onClick={() => window.open('https://google.com', '_blank')}>
+                <div className="excel-file-link" onClick={() => window.open('https://docs.google.com/spreadsheets/d/1pfbx3hRCwpLFMTnW7NmgNRH4GyQ0dsLmmi15MVdrtVE/edit?usp=sharing', '_blank')}>
                   <div className="excel-icon">📊</div>
                   <div className="excel-text">scopeX Data.xlsx</div>
                 </div>
